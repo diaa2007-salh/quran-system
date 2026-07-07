@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   نظام التصميم (Design Tokens)
+   لوحة ألوان مقصودة لسياق حلقات تحفيظ القرآن: أخضر زمردي هادئ + ذهبي دافئ،
+   على خلفية بيج فاتحة (لا نستخدم الأبيض الصريح أو الرمادي العام).
+   ============================================================================ */
+@theme inline {
+  --color-primary: #0f6b5c;
+  --color-primary-dark: #0b4f44;
+  --color-primary-light: #e7f2ef;
+  --color-accent: #c9974a;
+  --color-accent-light: #f6ecd9;
+  --color-surface: #faf8f3;
+  --color-surface-raised: #ffffff;
+  --color-ink: #1c2321;
+  --color-ink-muted: #5b6764;
+  --color-border: #e4ded2;
+
+  --font-display: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
+
+/* نمط focus مرئي وواضح لدعم إمكانية الوصول عبر لوحة المفاتيح */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+/* نسيج هندسي خفيف جداً مستوحى من الفن الهندسي الإسلامي، يُستخدم كخلفية
+   لصفحة الدخول والشريط الجانبي فقط — بأدنى وضوح حتى لا يشتّت الانتباه */
+.pattern-geometric {
+  background-color: var(--color-primary-dark);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.045) 0,
+      rgba(255, 255, 255, 0.045) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.045) 0,
+      rgba(255, 255, 255, 0.045) 1px,
+      transparent 1px,
+      transparent 22px
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

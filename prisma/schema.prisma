@@ -1,0 +1,126 @@
+// ============================================================================
+// Prisma Schema - نظام إدارة حلقات تحفيظ القرآن الكريم
+// التوثيق الكامل: https://pris.ly/d/prisma-schema
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// نستخدم PostgreSQL لأنه الخيار الأنسب للنشر على Vercel
+// (يعمل مباشرة مع Vercel Postgres / Neon / Supabase وغيرها)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+/// دور المستخدم داخل النظام
+enum Role {
+  ADMIN // مدير النظام: صلاحية كاملة
+  TEACHER // معلم: يدير أفواجه فقط
+}
+
+/// حالة حضور التلميذ في يوم معين
+enum AttendanceStatus {
+  PRESENT // حاضر
+  ABSENT // غائب
+  LATE // متأخر
+}
+
+/// إعدادات عامة للنظام (سجل واحد فقط) — اسم المؤسسة، الشعار، واللون الأساسي
+model Settings {
+  id           String @id @default("global")
+  schoolName   String @default("نظام إدارة حلقات تحفيظ القرآن الكريم")
+  logoUrl      String?
+  primaryColor String @default("#0f6b5c")
+
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+/// المستخدمون: يضم المديرين والمعلمين معاً، ويُميَّز بينهم بحقل role
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  /// كلمة مرور مُشفَّرة بخوارزمية bcrypt - لا تُخزَّن أبداً كنص صريح
+  password  String
+  role      Role     @default(TEACHER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// الأفواج المسندة لهذا المستخدم في حال كان معلماً
+  groups Group[]
+
+  @@map("users")
+}
+
+/// الفوج / الحلقة القرآنية
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// المعلم المسؤول عن الفوج (اختياري: يمكن أن يبقى الفوج دون معلم مؤقتاً)
+  teacherId String?
+  teacher   User?   @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  students    Student[]
+  attendances Attendance[]
+
+  @@index([teacherId])
+  @@map("groups")
+}
+
+/// التلميذ
+model Student {
+  id            String    @id @default(cuid())
+  fullName      String
+  birthDate     DateTime?
+  guardianPhone String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  /// الفوج الذي ينتمي إليه التلميذ حالياً (اختياري إلى حين توزيعه)
+  groupId String?
+  group   Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  attendances Attendance[]
+
+  @@index([groupId])
+  @@map("students")
+}
+
+/// سجل حضور يومي واحد لكل تلميذ
+model Attendance {
+  id        String           @id @default(cuid())
+  /// تاريخ اليوم فقط (مخزَّن بمنتصف الليل UTC، بدون توقيت)
+  date      DateTime
+  status    AttendanceStatus
+  note      String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  /// لا يمكن أن يكون لنفس التلميذ أكثر من سجل حضور واحد في نفس اليوم
+  @@unique([studentId, date])
+  @@index([groupId, date])
+  @@map("attendances")
+}
